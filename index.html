@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MrMuscles — Watch yourself get stronger.</title>
+    <meta
+      name="description"
+      content="MrMuscles is an offline-first fitness & nutrition tracker where your progress shows up on a living map of your body. Train a muscle and watch it light up. iOS + Android."
+    />
+    <meta name="theme-color" content="#0b0b0f" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+
+    <!-- social / open graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://harsh725.github.io/mrmuscles-site/" />
+    <meta property="og:title" content="MrMuscles — Watch yourself get stronger." />
+    <meta
+      property="og:description"
+      content="Every meal and rep becomes a living map of your body. Offline-first. Privacy-respecting leaderboards. Built solo with 3,146 tests."
+    />
+    <meta property="og:image" content="https://harsh725.github.io/mrmuscles-site/assets/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://harsh725.github.io/mrmuscles-site/assets/og.jpg" />
+
+    <!-- preload the display face — it carries the hero flex animation -->
+    <link
+      rel="preload"
+      href="assets/fonts/archivo-variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/site.css" />
+
+    <script defer src="js/vendor/gsap.min.js"></script>
+    <script defer src="js/vendor/ScrollTrigger.min.js"></script>
+    <script defer src="js/muscle-map.js"></script>
+    <script defer src="js/offline-demo.js"></script>
+    <script defer src="js/main.js"></script>
+  </head>
+  <body>
+    <!-- =========================================================
+         The muscle-map body figure, authored once. main.js clones it
+         into the spine (interactive) and the phone avatar screen (heatmap).
+    ========================================================== -->
+    <template id="body-tpl">
+      <svg viewBox="0 0 160 340" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle class="map__head" cx="80" cy="24" r="16" />
+        <g class="muscle" data-m="neck"><path d="M71 38 h18 l-2 12 h-14 z" /></g>
+        <g class="muscle" data-m="shoulders">
+          <ellipse cx="51" cy="62" rx="13" ry="11" />
+          <ellipse cx="109" cy="62" rx="13" ry="11" />
+        </g>
+        <g class="muscle" data-m="chest">
+          <path d="M64 54 q14 -4 15 6 v14 q0 6 -8 7 q-9 0 -9 -9 v-12 q1 -5 2 -6 z" />
+          <path d="M96 54 q-14 -4 -15 6 v14 q0 6 8 7 q9 0 9 -9 v-12 q-1 -5 -2 -6 z" />
+        </g>
+        <g class="muscle" data-m="back">
+          <path d="M60 76 q-6 12 -2 26 l6 -2 q-3 -12 0 -24 z" />
+          <path d="M100 76 q6 12 2 26 l-6 -2 q3 -12 0 -24 z" />
+        </g>
+        <g class="muscle" data-m="biceps">
+          <ellipse cx="42" cy="90" rx="9" ry="16" />
+          <ellipse cx="118" cy="90" rx="9" ry="16" />
+        </g>
+        <g class="muscle" data-m="forearms">
+          <ellipse cx="36" cy="124" rx="8" ry="17" />
+          <ellipse cx="124" cy="124" rx="8" ry="17" />
+        </g>
+        <g class="muscle" data-m="obliques">
+          <path d="M63 92 h5 v34 l-5 -4 z" />
+          <path d="M97 92 h-5 v34 l5 -4 z" />
+        </g>
+        <g class="muscle" data-m="abs"><rect x="69" y="84" width="22" height="50" rx="8" /></g>
+        <g class="muscle" data-m="quads">
+          <path d="M62 140 h16 v56 q0 8 -8 8 q-9 0 -9 -9 z" />
+          <path d="M98 140 h-16 v56 q0 8 8 8 q9 0 9 -9 z" />
+        </g>
+        <g class="muscle" data-m="calves">
+          <path d="M64 214 h13 v60 q0 6 -6 6 q-8 0 -8 -8 z" />
+          <path d="M96 214 h-13 v60 q0 6 6 6 q8 0 8 -8 z" />
+        </g>
+        <path class="map__foot" d="M63 286 q-2 8 4 9 h9 v-9 z" />
+        <path class="map__foot" d="M97 286 q2 8 -4 9 h-9 v-9 z" />
+      </svg>
+    </template>
+
+    <!-- =========================================================
+         SIGNATURE: fixed muscle-map spine (desktop) / progress bar (mobile)
+    ========================================================== -->
+    <aside class="spine" id="spine" aria-label="Reading progress — muscles worked">
+      <span class="spine__brand">MRMUSCLES</span>
+      <div class="spine__map" id="spine-map"></div>
+      <span class="spine__pct" id="spine-pct">0%</span>
+      <span class="spine__label" id="spine-label">warm-up</span>
+    </aside>
+    <div class="topbar" aria-hidden="true"><div class="topbar__fill" id="topbar-fill"></div></div>
+
+    <main>
+      <!-- =================== HERO =================== -->
+      <section class="hero wrap" data-muscle="shoulders" id="top">
+        <div class="hero__copy">
+          <p class="eyebrow hero__eyebrow">Offline-first fitness &amp; nutrition · iOS + Android</p>
+          <h1 class="hero__title">
+            Watch yourself get <span class="flex-word">stronger.</span>
+          </h1>
+          <p class="hero__sub">
+            MrMuscles turns every meal and every rep into a living map of your body. Muscles you
+            train light up. Progress you earn shows up — on you.
+          </p>
+          <div class="hero__ctas">
+            <a class="btn btn--goal" href="#tour">See it move ↓</a>
+            <a class="btn btn--ghost" href="#get">Get the app</a>
+          </div>
+        </div>
+        <div class="hero__device">
+          <div class="device" aria-hidden="true">
+            <span class="device__notch"></span>
+            <div class="device__viewport">
+              <!-- avatar screen (hero always shows this) -->
+              <div class="screen screen--avatar on">
+                <div class="screen__status">
+                  <span>9:00</span>
+                  <span class="dots"><i></i><i></i><i></i> 100</span>
+                </div>
+                <div class="screen__body">
+                  <div class="screen__head">Today</div>
+                  <div class="mini-cards">
+                    <div class="mini-card">
+                      <div class="k">Streak</div>
+                      <div class="v fire">12 🔥</div>
+                    </div>
+                    <div class="mini-card">
+                      <div class="k">Muscle score</div>
+                      <div class="v mint">+38</div>
+                    </div>
+                  </div>
+                  <div class="avatar-figure" data-avatar></div>
+                  <div class="legend">
+                    <span><i style="background: var(--violet)"></i>Worked</span>
+                    <span><i style="background: var(--rose)"></i>Overload</span>
+                    <span><i style="background: var(--ink-500)"></i>Rested</span>
+                  </div>
+                </div>
+                <div class="screen__tabs">
+                  <span data-on>Today</span><span>Log</span><span>Progress</span><span>Ranks</span
+                  ><span>You</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="hero__scroll">scroll to train ↓</span>
+      </section>
+
+      <hr class="rule" />
+
+      <!-- =================== FEATURE TOUR =================== -->
+      <section class="tour wrap" id="tour">
+        <div class="tour__grid">
+          <div class="tour__steps">
+            <div class="tour__step" data-muscle="chest" data-screen="avatar">
+              <span class="tour__num">01 / the avatar</span>
+              <h3>A body that keeps the score.</h3>
+              <p>
+                Log a workout and watch the exact muscles you trained heat up on your avatar.
+                Overdo it and they burn red. Skip a week and watch the map cool. No charts to
+                decode — it's you.
+              </p>
+            </div>
+            <div class="tour__step" data-muscle="biceps" data-screen="log">
+              <span class="tour__num">02 / logging</span>
+              <h3>Log anything in seconds.</h3>
+              <p>
+                Photo-first meals with automatic EXIF stripping. Any workout — barbell to
+                badminton — with a picker that knows which muscles each exercise hits. N identical
+                sets in one tap.
+              </p>
+            </div>
+            <div class="tour__step" data-muscle="back" data-screen="ranks">
+              <span class="tour__num">03 / leaderboards</span>
+              <h3>Compete without being watched.</h3>
+              <p>
+                World, country, and city leaderboards built on privacy: you choose what's visible,
+                scoring runs on anonymous MET-minutes, and your data stays yours. Friends join by
+                QR code.
+              </p>
+            </div>
+            <div class="tour__step" data-muscle="neck" data-screen="alarm">
+              <span class="tour__num">04 / squad alarms</span>
+              <h3>Your squad won't let you sleep in.</h3>
+              <p>
+                Squad Alarms are peer-to-peer wake-up pacts — no server, just your crew.
+                Full-screen alarm, and the only snooze button is doing the movement the sensors
+                are checking for.
+              </p>
+            </div>
+            <div class="tour__step" data-muscle="abs" data-screen="pr">
+              <span class="tour__num">05 / the payoff</span>
+              <h3>Joy you actually earned.</h3>
+              <p>
+                Streaks with freezes for life's bad weeks. XP and levels tuned to habit science.
+                And when you hit a real PR — confetti. Real celebrations for real work.
+              </p>
+            </div>
+          </div>
+
+          <!-- sticky device: screens crossfade as steps scroll -->
+          <div class="tour__sticky">
+            <div class="device" id="tour-device" aria-hidden="true">
+              <span class="device__notch"></span>
+              <div class="device__viewport">
+                <!-- avatar -->
+                <div class="screen screen--avatar on" data-screen="avatar">
+                  <div class="screen__status"><span>9:00</span><span class="dots"><i></i><i></i><i></i> 100</span></div>
+                  <div class="screen__body">
+                    <div class="screen__head">Today</div>
+                    <div class="mini-cards">
+                      <div class="mini-card"><div class="k">Streak</div><div class="v fire">12 🔥</div></div>
+                      <div class="mini-card"><div class="k">Muscle score</div><div class="v mint">+38</div></div>
+                    </div>
+                    <div class="avatar-figure" data-avatar></div>
+                    <div class="legend">
+                      <span><i style="background: var(--violet)"></i>Worked</span>
+                      <span><i style="background: var(--rose)"></i>Overload</span>
+                      <span><i style="background: var(--ink-500)"></i>Rested</span>
+                    </div>
+                  </div>
+                  <div class="screen__tabs"><span data-on>Today</span><span>Log</span><span>Progress</span><span>Ranks</span><span>You</span></div>
+                </div>
+                <!-- log -->
+                <div class="screen" data-screen="log">
+                  <div class="screen__status"><span>9:00</span><span class="dots"><i></i><i></i><i></i> 100</span></div>
+                  <div class="screen__body">
+                    <div class="screen__head">Log Workout</div>
+                    <div class="seg"><span class="sel">Strength</span><span>Cardio</span></div>
+                    <div class="chips">
+                      <span class="chip sel">Chest</span><span class="chip">Back</span
+                      ><span class="chip">Legs</span><span class="chip">Arms</span
+                      ><span class="chip">Core</span>
+                    </div>
+                    <div class="pick-row sel">
+                      <div>
+                        <div class="nm">Barbell Bench Press</div>
+                        <div class="mt">chest · triceps · front delts</div>
+                      </div>
+                      <div class="stepper"><b>–</b><span class="n">4</span><b>+</b></div>
+                    </div>
+                    <div class="pick-row">
+                      <div><div class="nm">Incline Dumbbell Press</div><div class="mt">upper chest</div></div>
+                      <div class="stepper"><b>–</b><span class="n">3</span><b>+</b></div>
+                    </div>
+                    <div class="pick-row">
+                      <div><div class="nm">Cable Fly</div><div class="mt">chest</div></div>
+                      <div class="stepper"><b>–</b><span class="n">3</span><b>+</b></div>
+                    </div>
+                  </div>
+                  <div class="screen__tabs"><span>Today</span><span data-on>Log</span><span>Progress</span><span>Ranks</span><span>You</span></div>
+                </div>
+                <!-- ranks -->
+                <div class="screen" data-screen="ranks">
+                  <div class="screen__status"><span>9:00</span><span class="dots"><i></i><i></i><i></i> 100</span></div>
+                  <div class="screen__body">
+                    <div class="screen__head">Ranks</div>
+                    <div class="scope"><span class="sel">World</span><span>Country</span><span>City</span><span>Friends</span></div>
+                    <div class="rank-row"><span class="r">1</span><span class="av"></span><span class="nm">iron_wren</span><span class="sc">4,812</span></div>
+                    <div class="rank-row"><span class="r">2</span><span class="av"></span><span class="nm">deltaform</span><span class="sc">4,530</span></div>
+                    <div class="rank-row"><span class="r">3</span><span class="av"></span><span class="nm">nightsquat</span><span class="sc">4,301</span></div>
+                    <div class="rank-row"><span class="r">4</span><span class="av"></span><span class="nm">mira.lifts</span><span class="sc">3,998</span></div>
+                    <div class="rank-row you"><span class="r">7</span><span class="av"></span><span class="nm">you</span><span class="sc">3,472</span></div>
+                    <div class="rank-row"><span class="r">8</span><span class="av"></span><span class="nm">coach_bee</span><span class="sc">3,388</span></div>
+                  </div>
+                  <div class="screen__tabs"><span>Today</span><span>Log</span><span>Progress</span><span data-on>Ranks</span><span>You</span></div>
+                </div>
+                <!-- alarm -->
+                <div class="screen screen--alarm" data-screen="alarm">
+                  <div class="alarm-squad"><i></i><i></i><i></i></div>
+                  <div class="alarm-time">06:00</div>
+                  <div class="alarm-tag">Squad Alarm · Leg Day</div>
+                  <div class="alarm-dismiss">Do 20 squats to dismiss</div>
+                  <div class="alarm-hint">the sensors are watching 👀</div>
+                </div>
+                <!-- celebration -->
+                <div class="screen screen--pr" data-screen="pr">
+                  <div class="confetti" id="pr-confetti" aria-hidden="true"></div>
+                  <div class="pr-badge">🎉</div>
+                  <div class="pr-title">New PR!</div>
+                  <div class="pr-sub">Deadlift · 140 kg · +5 kg</div>
+                  <div class="xp-bar"><i></i></div>
+                  <div class="pr-lvl">Level 7 · 2,140 XP</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule" />
+
+      <!-- =================== REAL SCREENS =================== -->
+      <section class="shots wrap" data-muscle="obliques" id="screens">
+        <p class="eyebrow">Straight from the phone · real build · seeded demo data</p>
+        <h2>Not a mockup.<br />This is the app.</h2>
+        <div class="shots__strip">
+          <figure class="shot">
+            <div class="shot__frame">
+              <img src="assets/shots/today.jpg" alt="Today screen: streak, calories remaining, macro bars and logged meals" width="448" height="1000" loading="lazy" />
+            </div>
+            <figcaption>Today — streak, macros &amp; meals at a glance</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="shot__frame">
+              <img src="assets/shots/progress.jpg" alt="Your Body screen: interactive muscle map with worked muscles highlighted" width="448" height="1000" loading="lazy" />
+            </div>
+            <figcaption>Your body — the interactive muscle map</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="shot__frame">
+              <img src="assets/shots/log.jpg" alt="Log screen: log meal, workout, body metrics or progress photo" width="448" height="1000" loading="lazy" />
+            </div>
+            <figcaption>Log — meal, workout, metrics, progress photo</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="shot__frame">
+              <img src="assets/shots/ranks.jpg" alt="Ranks screen: your MuscleScore, active days and new personal records" width="448" height="1000" loading="lazy" />
+            </div>
+            <figcaption>Ranks — MuscleScore, active days &amp; PRs</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="shot__frame">
+              <img src="assets/shots/profile.jpg" alt="Profile screen: level, achievements and location" width="448" height="1000" loading="lazy" />
+            </div>
+            <figcaption>Profile — levels, achievements &amp; geo</figcaption>
+          </figure>
+        </div>
+        <p class="shots__hint">← swipe · captured live on Android from the seeded dev build</p>
+      </section>
+
+      <hr class="rule" />
+
+      <!-- =================== OFFLINE =================== -->
+      <section class="offline wrap" data-muscle="quads" id="offline">
+        <div class="offline__grid">
+          <div>
+            <p class="eyebrow">Works on the subway, the summit, anywhere</p>
+            <h2>No signal.<br />No servers.<br />No excuses.</h2>
+            <p class="lead" style="margin-top: var(--space-2)">
+              Everything — logging, avatar, streaks, history — runs entirely on your phone. Flip on
+              airplane mode and nothing breaks; MrMuscles queues your points and syncs when you're
+              back. The cloud is optional. Your workout isn't.
+            </p>
+          </div>
+
+          <!-- interactive airplane-mode demo -->
+          <div class="demo" id="demo">
+            <div class="demo__top">
+              <button
+                class="airplane"
+                id="airplane"
+                role="switch"
+                aria-checked="false"
+                aria-label="Toggle airplane mode"
+              >
+                <span class="sw" aria-hidden="true"></span> ✈ Airplane mode
+              </button>
+              <span class="demo__cloud" id="demo-cloud">☁ synced</span>
+            </div>
+            <div class="demo__phone">
+              <div class="demo__log" id="demo-log"></div>
+              <button class="btn btn--primary" id="demo-add" style="width: 100%; justify-content: center">
+                Log a workout
+              </button>
+              <p class="demo__status" id="demo-status" aria-live="polite">All caught up.</p>
+            </div>
+            <p class="demo__hint">
+              Toggle airplane mode, then keep logging. Nothing stops — points just queue and drain
+              when you reconnect.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule" />
+
+      <!-- =================== ENGINEERING =================== -->
+      <section class="eng wrap" data-muscle="forearms" id="engineering">
+        <p class="eyebrow">For the judges who read source</p>
+        <h2>Built like we train:<br />no shortcuts.</h2>
+
+        <div class="eng__stats">
+          <div class="stat"><div class="stat__num" data-count="3146" data-suffix="">0</div><div class="stat__label">unit tests, green in CI</div></div>
+          <div class="stat"><div class="stat__num" data-count="93.6" data-suffix="%" data-decimals="1">0</div><div class="stat__label">coverage, threshold-enforced</div></div>
+          <div class="stat"><div class="stat__num">$0<span style="font-size: 0.5em">/mo</span></div><div class="stat__label">cloud cost at MVP scale</div></div>
+          <div class="stat"><div class="stat__num" data-count="100" data-suffix="%">0</div><div class="stat__label">offline-capable core</div></div>
+          <div class="stat"><div class="stat__num" data-count="26" data-suffix="+">0</div><div class="stat__label">architecture decision records</div></div>
+          <div class="stat"><div class="stat__num" style="font-size: 1.1rem; letter-spacing: 0">custom sync engine</div><div class="stat__label">WatermelonDB → Supabase RLS</div></div>
+        </div>
+
+        <p class="lead">
+          The whole product is offline-first by construction. A local SQLite database
+          (WatermelonDB) is the source of truth; a hand-written <code>synchronize()</code> layer
+          reconciles with Supabase Edge Functions over a privacy-preserving, row-level-security
+          model, and a nightly <code>pg_cron</code> job aggregates anonymous score events into the
+          world / country / city leaderboards. Photos go to zero-egress object storage.
+        </p>
+
+        <div class="eng__arch" aria-label="Architecture: phone-local database syncs to Supabase; photos to object storage">
+          <svg viewBox="0 0 720 210" xmlns="http://www.w3.org/2000/svg" role="img">
+            <defs>
+              <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                <path d="M0 0 L7 3 L0 6 z" fill="currentColor" />
+              </marker>
+            </defs>
+            <g fill="none" stroke="currentColor" stroke-width="1.4">
+              <rect x="12" y="52" width="176" height="96" rx="12" />
+              <rect x="286" y="30" width="168" height="70" rx="10" />
+              <rect x="286" y="128" width="168" height="58" rx="10" />
+              <rect x="536" y="52" width="168" height="96" rx="12" />
+              <line x1="188" y1="86" x2="280" y2="64" marker-end="url(#arrow)" />
+              <line x1="280" y1="74" x2="188" y2="96" marker-end="url(#arrow)" />
+              <line x1="454" y1="65" x2="530" y2="86" marker-end="url(#arrow)" />
+              <line x1="188" y1="120" x2="280" y2="157" marker-end="url(#arrow)" />
+            </g>
+            <g font-family="var(--font-mono)" fill="var(--white)" font-size="13">
+              <text x="100" y="88" text-anchor="middle">📱 Phone</text>
+              <text x="100" y="108" text-anchor="middle" fill="var(--fog)" font-size="10">SQLite · WatermelonDB</text>
+              <text x="370" y="60" text-anchor="middle">Supabase Edge Fns</text>
+              <text x="370" y="78" text-anchor="middle" fill="var(--fog)" font-size="10">synchronize() · score-events</text>
+              <text x="370" y="150" text-anchor="middle">Cloudflare R2</text>
+              <text x="370" y="168" text-anchor="middle" fill="var(--fog)" font-size="10">photos · zero egress</text>
+              <text x="620" y="90" text-anchor="middle">Postgres + RLS</text>
+              <text x="620" y="108" text-anchor="middle" fill="var(--fog)" font-size="10">pg_cron leaderboards</text>
+              <text x="232" y="52" text-anchor="middle" fill="var(--goal)" font-size="9">sync ⇄</text>
+            </g>
+          </svg>
+        </div>
+
+        <p class="eng__sdlc">
+          Designed, built, and adversarially reviewed with an agentic SDLC — every phase gated by
+          tests, lint, and independent AI review. Source available to judges on request.
+        </p>
+      </section>
+
+      <hr class="rule" />
+
+      <!-- =================== FINALE =================== -->
+      <section class="finale wrap" data-muscle="calves" id="get">
+        <p class="eyebrow">Strength you can see</p>
+        <h2>MrMuscles.</h2>
+        <p class="lead">
+          The whole body's lit now. Install the beta, or scan to open it on your phone — then log
+          one workout and watch yourself light up.
+        </p>
+        <div class="finale__cta">
+          <a class="btn btn--goal" id="apk-btn" href="https://github.com/harsh725/mrmuscles-site/releases" target="_blank" rel="noopener">Download the Android beta</a>
+          <a class="btn btn--ghost" href="#top">Back to top ↑</a>
+        </div>
+        <div class="qr-pair">
+          <div class="qr">
+            <div class="qr__frame"><img src="assets/qr-site.svg" alt="QR code linking to this site" width="112" height="112" /></div>
+            <span class="qr__label">Open this site</span>
+          </div>
+          <div class="qr">
+            <div class="qr__frame"><img src="assets/qr-apk.svg" alt="QR code to install the Android beta" width="112" height="112" /></div>
+            <span class="qr__label">Install the beta</span>
+          </div>
+        </div>
+        <p class="credits">
+          Designed &amp; engineered by Kavin Nash · React Native · WatermelonDB · Supabase · Skia
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>MRMUSCLES · exhibition build 2026</p>
+        <p>Offline-first · privacy-respecting · $0/mo cloud</p>
+      </div>
+    </footer>
+  </body>
+</html>
