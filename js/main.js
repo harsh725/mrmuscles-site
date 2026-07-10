@@ -8,24 +8,36 @@
   const hasST = typeof window.ScrollTrigger !== "undefined";
 
   // ---------- hero load sequence ----------
+  const heroEls = ".hero__eyebrow, .hero__title, .hero__sub, .hero__ctas, .hero__device";
   if (hasGSAP && !REDUCE) {
-    const tl = gsap.timeline({ delay: 0.12 });
-    tl.fromTo(
-      ".hero__title",
-      { "--hw": 520, "--hwd": 66, opacity: 0, y: 10 },
-      { "--hw": 900, "--hwd": 118, opacity: 1, y: 0, duration: 1.0, ease: "power3.out" }
-    );
-    tl.from(".hero__eyebrow", { opacity: 0, y: 12, duration: 0.4 }, 0.05);
-    tl.from(".hero__sub, .hero__ctas", { opacity: 0, y: 16, stagger: 0.08, duration: 0.45 }, "-=0.55");
-    tl.from(".hero__device", { opacity: 0, y: 26, scale: 0.96, duration: 0.6, ease: "power2.out" }, "-=0.75");
+    try {
+      const tl = gsap.timeline({ delay: 0.12 });
+      tl.fromTo(
+        ".hero__title",
+        { "--hw": 520, "--hwd": 66, opacity: 0, y: 10 },
+        { "--hw": 900, "--hwd": 118, opacity: 1, y: 0, duration: 1.0, ease: "power3.out" }
+      );
+      tl.from(".hero__eyebrow", { opacity: 0, y: 12, duration: 0.4 }, 0.05);
+      tl.from(".hero__sub, .hero__ctas", { opacity: 0, y: 16, stagger: 0.08, duration: 0.45 }, "-=0.55");
+      tl.from(".hero__device", { opacity: 0, y: 26, scale: 0.96, duration: 0.6, ease: "power2.out" }, "-=0.75");
 
-    // heat-up ripple across the spine, then settle (class-based so it never
-    // fights the scroll-driven fills)
-    const muscles = [...document.querySelectorAll("#spine-map .muscle")];
-    muscles.forEach((g, i) => {
-      setTimeout(() => g.classList.add("active"), 500 + i * 45);
-      setTimeout(() => g.classList.remove("active"), 1000 + i * 45);
-    });
+      // failsafe: above-the-fold content must never stay hidden. If the timeline
+      // stalls while the page is actually visible, snap it to the end state.
+      setTimeout(() => {
+        if (document.visibilityState === "visible" && tl.progress() < 1) tl.progress(1);
+      }, 2600);
+
+      // heat-up ripple across the spine, then settle (class-based so it never
+      // fights the scroll-driven fills)
+      const muscles = [...document.querySelectorAll("#spine-map .muscle")];
+      muscles.forEach((g, i) => {
+        setTimeout(() => g.classList.add("active"), 500 + i * 45);
+        setTimeout(() => g.classList.remove("active"), 1000 + i * 45);
+      });
+    } catch (e) {
+      // any animation failure reveals the hero rather than hiding it
+      gsap.set(heroEls, { clearProps: "opacity,transform" });
+    }
   }
 
   // ---------- feature tour: crossfade device screens ----------
